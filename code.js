@@ -136,7 +136,7 @@ Waiter.prototype = {
     this.callback.apply(WaiterContext, args);
 
     // self destruction
-    delete(this);
+    // delete(this);
   }
 };
 
