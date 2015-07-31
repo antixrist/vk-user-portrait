@@ -474,7 +474,7 @@ var deltaMax = 300;
           log('Try to loading user\'s feed page...');
           nav.go(feedUrl, null, {noback: true});
 
-          waiter(5000, 100, function () {
+          waiter(30000, 100, function () {
             return document.location.href == feedUrl && $('.post').length;
           }, function (err) {
             if (err) {
