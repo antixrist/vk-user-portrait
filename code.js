@@ -3,12 +3,91 @@ var useScrollAnimate = false;
 var deltaMin = 100;
 var deltaMax = 300;
 
+/**
+ * Waiter.js
+ * https://github.com/antixrist/waiter.js
+ */
 (typeof window.Waiter == 'undefined') && (function () {
+  var root = this;
+  if (typeof window == 'object' && this === window) {
+    root = window;
+  } else if (typeof global == 'object' && this === global) {
+    root = global;
+  } else {
+    root = this;
+  }
+
   /**
-   * Waiter.js
-   * https://github.com/antixrist/waiter.js
+   * Plug function
    */
-  var WaiterContext = this;
+  var noop = function () {};
+
+  /**
+   * Positive plug function
+   * @returns {boolean}
+   */
+  var noopPositive = function () { return true; };
+
+  /**
+   * Return current timestamp in milliseconds
+   * @returns {Number}
+   */
+  var getTimeInMs = function () {
+    if (!Date.now) {
+      Date.now = function now() {
+        return new Date().getTime();
+      };
+    }
+    return Date.now();
+  };
+
+  /**
+   * @param raw
+   * @returns {Array}
+   */
+  var toArray = function (raw) {
+    return Array.prototype.slice.call(raw, 0);
+  };
+
+  /**
+   * @param arg
+   * @returns {boolean}
+   */
+  var isArray = function (arg) {
+    if (!Array.isArray) {
+      Array.isArray = function(arg) {
+        return Object.prototype.toString.call(arg) === '[object Array]';
+      };
+    }
+
+    return Array.isArray(arg);
+  };
+
+  /**
+   * @param {[]} args
+   * @returns {{}}
+   */
+  var _parseArgs = function (args) {
+    var options = {};
+
+    if (args.length == 1) {
+      options = args[0];
+    } else {
+      options.timeout = args[0] || false;
+      options.interval = args[1] || false;
+      options.condition = args[2] || false;
+      options.callback = args[3] || false;
+    }
+
+    var result = {};
+    result.timeout = parseInt(options.timeout || 1, 10) || 1;
+    result.interval = parseInt(options.interval || 1, 10) || 1;
+    result.condition = (typeof options.condition == 'function') ? options.condition : noopPositive;
+    result.callback = (typeof options.callback == 'function') ? options.callback : noop;
+
+    return result;
+  };
+
   /**
    *
    * @param {Number} timeout Max time in milliseconds
@@ -20,85 +99,62 @@ var deltaMax = 300;
    */
   function Waiter (timeout, interval, condition, callback) {
     var options,
-        args = Waiter.toArray(arguments),
+        args = toArray(arguments),
         isCleanedArgs = args[4] || false;
-  
+
     if (!isCleanedArgs) {
-      options = Waiter._parseArgs(args);
+      options = _parseArgs(args);
       timeout = options.timeout;
       interval = options.interval;
       condition = options.condition;
       callback = options.callback;
     }
-  
-    // singleton
+
+    // self constructor
     if (!(this instanceof Waiter)) {
       isCleanedArgs = true;
       return new Waiter(timeout, interval, condition, callback, isCleanedArgs);
     }
-  
+
     this.timeout = timeout;
     this.interval = interval;
     this.condition = condition;
     this.callback = callback;
-  
+
     /**
      * @type {boolean}
      */
     this.done = false;
+
     /**
      * @type {number}
      */
     this.elapsedTime = 0;
+
     /**
      * @type {number}
      */
     this.iteration = 0;
+
     /**
      * @type {Number}
      */
-    this.tstart = Waiter.getTimeInMs();
-  
+    this.tstart = getTimeInMs();
+
     this.check();
   }
-  
-  /**
-   * @param {[]} args
-   * @returns {{}}
-   * @private
-   */
-  Waiter._parseArgs = function (args) {
-    var options = {};
-  
-    if (args.length == 1) {
-      options = args[0];
-    } else {
-      options.timeout = args[0] || false;
-      options.interval = args[1] || false;
-      options.condition = args[2] || false;
-      options.callback = args[3] || false;
-    }
-  
-    var result = {};
-    result.timeout = parseInt(options.timeout || 1, 10) || 1;
-    result.interval = parseInt(options.interval || 1, 10) || 1;
-    result.condition = (typeof options.condition == 'function') ? options.condition : Waiter.noopPositive;
-    result.callback = (typeof options.callback == 'function') ? options.callback : Waiter.noop;
-  
-    return result;
-  };
-  
+
   /**
    * @type {{constructor: Function, check: Function, afterCheck: Function, runCallback: Function}}
    */
   Waiter.prototype = {
     constructor: Waiter,
-  
+
     check: function () {
       var self = this;
       var conditionResult, cbArgs;
       self.iteration = self.iteration + 1;
-      self.elapsedTime = Waiter.getTimeInMs() - self.tstart;
+      self.elapsedTime = getTimeInMs() - self.tstart;
       if (!self.done) {
         if (self.elapsedTime <= self.timeout) {
           conditionResult = self.condition(self.elapsedTime, self.iteration, self.afterCheck.bind(this));
@@ -117,7 +173,7 @@ var deltaMax = 300;
         if (!!conditionResult) {
           self.done = true;
           cbArgs = [null, self.elapsedTime, self.iteration];
-          if (Waiter.isArray(conditionResult)) {
+          if (isArray(conditionResult)) {
             cbArgs = cbArgs.concat(conditionResult);
           }
           self.runCallback.apply(self, cbArgs);
@@ -129,76 +185,38 @@ var deltaMax = 300;
       }
     },
     runCallback: function (args) {
-      if (typeof args == 'undefined' || !Waiter.isArray(args)) {
-        args = Waiter.toArray(arguments);
+      if (typeof args == 'undefined' || !isArray(args)) {
+        args = toArray(arguments);
       }
-  
-      this.callback.apply(WaiterContext, args);
-  
-      // self destruction
-      // delete(this);
+
+      this.callback.apply(root, args);
     }
   };
-  
+
   /**
    * Error message if time elapsed with false condition
    * @type {string}
    */
   Waiter.errText = '[waiter.js] Timeout with false condition';
-  
-  /**
-   * Plug function
-   */
-  Waiter.noop = function () {};
-  
-  /**
-   * Positive plug function
-   * @returns {boolean}
-   */
-  Waiter.noopPositive = function () { return true; };
-  
-  /**
-   * Return current timestamp in milliseconds
-   * @returns {Number}
-   */
-  Waiter.getTimeInMs = function () {
-    if (!Date.now) {
-      Date.now = function now() {
-        return new Date().getTime();
-      };
-    }
-    return Date.now();
-  };
-  
-  /**
-   * @param raw
-   * @returns {Array}
-   */
-  Waiter.toArray = function (raw) {
-    return Array.prototype.slice.call(raw, 0);
-  };
-  /**
-   * @param arg
-   * @returns {boolean}
-   */
-  Waiter.isArray = function (arg) {
-    if (!Array.isArray) {
-      Array.isArray = function(arg) {
-        return Object.prototype.toString.call(arg) === '[object Array]';
-      };
-    }
-  
-    return Array.isArray(arg);
-  };
-  
-  waiter = Waiter;
-  if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
-    module.exports = waiter;
-  }
-  // /Waiter.js
-})();
 
-(typeof window.vk_portrait == 'undefined' || !window.vk_portrait) && (function () {
+  // Node.js
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = Waiter;
+  }
+  // AMD / RequireJS
+  else if (typeof define !== 'undefined' && define.amd) {
+    define([], function () {
+      return Waiter;
+    });
+  }
+  // included directly via <script> tag
+  else {
+    root.waiter = root.Waiter = Waiter;
+  }
+})();
+// /Waiter.js
+
+(typeof window.vk_portrait == 'undefined') && (function () {
   
   var isNumeric = function (n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
