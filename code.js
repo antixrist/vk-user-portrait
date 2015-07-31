@@ -1,9 +1,9 @@
-Waiter || (function () {
-  var useScroll = false;
-  var useScrollAnimate = false;
-  var deltaMin = 100;
-  var deltaMax = 300;
+var useScroll = false;
+var useScrollAnimate = false;
+var deltaMin = 100;
+var deltaMax = 300;
 
+(typeof window.Waiter == 'undefined') && (function () {
   /**
    * Waiter.js
    * https://github.com/antixrist/waiter.js
@@ -198,8 +198,7 @@ Waiter || (function () {
   // /Waiter.js
 })();
 
-window.vk_portrait || (function () {
-  window.vk_portrait = true;
+(typeof window.vk_portrait == 'undefined' || !window.vk_portrait) && (function () {
   
   var isNumeric = function (n) {
     return !isNaN(parseFloat(n)) && isFinite(n);
@@ -269,7 +268,7 @@ window.vk_portrait || (function () {
   };
 
   log('Waiting jQuery...');
-  waiter(10000, 100, function (timeElapsed, iteration, cb) {
+  waiter(5000, 100, function (timeElapsed, iteration, cb) {
     var condition = runCondition();
     // console.log('check! elapsed time:', timeElapsed +'ms', '; iteration:', iteration, '; result:', condition);
     return condition;
@@ -278,6 +277,7 @@ window.vk_portrait || (function () {
       log('jQuery load failed', true, true);
       return;
     }
+    window.vk_portrait = true;
 
     var $ = window.jQuery;
     // console.log('run!', timeElapsed +'ms', 'and', iteration, 'iteration', '; window.jQuery:', window.jQuery, '$', $);
