@@ -207,6 +207,7 @@ if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
 
     var args = Array.prototype.slice.call(arguments, 0);
     var text = args[0] || '', isError = false, needAlert = false, data = false;
+    var prefix = '[vk_portrait] ';
     var suffix = '';
 
     if (!text) { return; }
@@ -226,17 +227,21 @@ if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
 
     if (data) {
       if ($.isPlainObject(data)) {
-        suffix = '\n\n'+ JSON.stringify(data);
+        suffix = '\n'+ JSON.stringify(data);
       } else if ($.isArray(data)) {
-        suffix = '\n\n'+ data.join('\n');
+        suffix = '\n'+ data.join('\n');
       }
     }
 
-    var method = (isError) ? 'error' : 'info';
+    // var method = (isError) ? 'error' : 'info';
+    var method = 'info';
+    if (isError) {
+      prefix = prefix + '[error] ';
+    }
 
-    console[method]('[vk_portrait] '+ text);
+    console[method](prefix + text + suffix);
     data && console.log(data);
-    needAlert && alert('[vk_portrait] '+ text + suffix);
+    needAlert && alert(prefix + text + suffix);
   };
 
   var random = function (min, max) {
@@ -293,7 +298,7 @@ if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
     };
 
     var removeAllPostsFromDom = function () {
-      $('.post').remove();
+      $('.feed_row').remove();
     };
 
     var loadNewPosts = function (cb) {
@@ -301,7 +306,7 @@ if (typeof module != 'undefined' && typeof module.exports != 'undefined') {
       
       feed.showMore();
 
-      waiter(10000, 200, function () {
+      waiter(30000, 200, function () {
         return $('.post').length;
       }, function (err) {
         if (err) {
